@@ -69,7 +69,7 @@ for i in temp:
 
       out_bin=i+'bin'
       expressao_mata=out_bin+'=if('+i+'==14 |'+i+'==13,'+i+',0)'
-      #grass.mapcalc(expressao_mata, overwrite = True, quiet = True)
+     # grass.mapcalc(expressao_mata, overwrite = True, quiet = True)
       #print expressao_mata
       pacthSingle(out_bin)
     #print frags
