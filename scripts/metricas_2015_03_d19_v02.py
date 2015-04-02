@@ -7,16 +7,23 @@ def createtxtED(mapa):
   os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
   txtsaida=mapa+'PCT_Borda.txt'
   txtreclass=open(mapa+'_EDGE.txt','w')
-  
-  txtreclass.write('COD'',''HA\n')
+  txtreclass.write('class'',''COD'',''HA'',''PCT\n')
+  classe=['Matrix','EDGE','CORE']
+  cont_class=0
   if y!=0:
+    acumula=0
+    for i in y:
+      split=i.split(' ')
+      acumula=acumula+float(split)        
   
     for i in y:
       if i !='':
+            
         ##print i
         f=i.split(' ')
         if '*' in f :
           break
+        
         else:
           ##print f
           ids=f[0]
@@ -30,7 +37,8 @@ def createtxtED(mapa):
           
           ##print haint
           
-          txtreclass.write(`ids`+','+`haint`+'\n')
+          txtreclass.write(classe[cont_class]+','+`ids`+','+`haint`+`pct`+'\n')
+          cont_class=cont_class+1
     
     txtreclass.close()
 
@@ -45,7 +53,7 @@ def create_EDGE_single(ListmapsED):
   expressao2='mapa_bin=if('+ListmapsED+'>0,1,0)'
   grass.mapcalc(expressao2, overwrite = True, quiet = True)  
   grass.run_command('r.neighbors',input='mapa_bin',output=ListmapsED+"_eroED_50m",method='minimum',size=5,overwrite = True)
-  inputs=ListmapsED+"_eroED_50m,"+ListmapsED
+  inputs=ListmapsED+"_eroED_50m,mapa_bin"
   out=ListmapsED+"_eroED_50m_EDGE"
   grass.run_command('r.series',input=inputs,out=out,method='sum',overwrite = True)
   espressaoEd=ListmapsED+'_eroED_50m_EDGE_FINAL=int('+ListmapsED+"_eroED_50m_EDGE)"
