@@ -1,6 +1,10 @@
 import grass.script as grass
 import os
 import math
+
+#tem que definir o diretotio de saida
+outputfolder=r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados"
+
 #------------------------------------------------------------------------------------------------------------------------------
 # calcula a  area de cada classe "nao-floresta"/area total da paisagem.
 def indice_antropi(i):
@@ -9,7 +13,7 @@ def indice_antropi(i):
     #-----------------------------------------
     
     # setando caminho de saida
-    os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
+    os.chdir(outputfolder)
     grass.run_command('g.region', rast=i)
     #-----------------------------------------
     # criando mapa retirando mapa retirando a floresta
@@ -176,6 +180,7 @@ def heterogeneidade(i):
 
 #---------------------------------------------------------------------------------------------------------------------------------
 #-----------------------------------------------------------------------------#
+
  #nessa def sera o txt com as infos dos mapas de borda
  #area em M2 e PCT
 #--------------------------------------------------
@@ -183,7 +188,7 @@ def createtxtED(mapa):
     grass.run_command('g.region',rast=mapa)
     x=grass.read_command('r.stats',flags='a',input=mapa)
     y=x.split('\n')
-    os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
+    os.chdir(outputfolder)
     nome=mapa.replace("extracByMask_rast_imgbin_eroED_50m_EDGE_FINAL",'')
     
     txtreclass=open(nome+'PCT_EDGE.txt','w')
@@ -250,7 +255,9 @@ def create_EDGE_single(ListmapsED):
     grass.run_command('r.neighbors',input='mapa_bin',output=ListmapsED+"_eroED_50m",method='minimum',size=5,overwrite = True)
     inputs=ListmapsED+"_eroED_50m,mapa_bin"
     out=ListmapsED+"_eroED_50m_EDGE"
-    grass.run_command('r.series',input=inputs,out=out,method='sum',overwrite = True)
+    grass.run_command('r.series',input=inputs,out='temp',method='sum',overwrite = True)
+    expressao_clip=ListmapsED+"_eroED_50m_EDGE=if("+ListmapsED+">=0,temp,null())"
+    grass.mapcalc(expressao_clip, overwrite = True, quiet = True)  
     espressaoEd=ListmapsED+'_eroED_50m_EDGE_FINAL=int('+ListmapsED+"_eroED_50m_EDGE)"
     mapcalcED(espressaoEd)
     createtxtED(ListmapsED+'_eroED_50m_EDGE_FINAL')
@@ -275,7 +282,7 @@ def mean(mapa_mean):
     #print mean_split[9]
     mean_split_write=mean_split[9].replace('mean: ','')
     namesaidatxt=mapa_mean.replace("_extracByMask_rast_imgbin_patch_clump_mata_limpa_AreaHA",'_Mean_size_patch.txt')
-    os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
+    os.chdir(outputfolder)
     txt=open(namesaidatxt,'w')
     cabecalho='Mean\n'
     txt.write(cabecalho)
@@ -319,7 +326,7 @@ def pct_flt(mapa_bin,mapa_limpo):
     #----------------------------------------------------
     
     # mundanmdo diretorio de saida
-    os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
+    os.chdir(outputfolder)
     #---------------------------------------------------------
 
        
@@ -425,7 +432,7 @@ def rulesreclass(mapa_limpo):
      
     y=x.split('\n')
     del y[-1]
-    os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
+    os.chdir(outputfolder)
     
     txt=open(nome_saida,'w')
     
