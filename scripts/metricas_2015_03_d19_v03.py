@@ -2,66 +2,184 @@ import grass.script as grass
 import os
 import math
 
-
-#def heterogeneidade(i):
-    #grass.run_command('g.region',rast=i)
-    #stats=grass.read_command('r.stats',input=i)
-    #ListStats=stats.split('\n')
-    ##print ListStats
-    #del ListStats[-1]
-    #del ListStats[-1]
-    #lista_multplos2=[]
-    #y=0
-    ##print len(ListStats)
-    #while len(ListStats)>=y:
-        #if y==0:
-            #resulti=1
-        #else:
-            #resulti=resulti*2
-        #lista_multplos2.append(resulti)
-        #y=y+1
-    #cont_reclasse=0
-    #lista_jucao_final=[]
-    #for sts in ListStats:
-        #formatname='000000'+`lista_multplos2[cont_reclasse]`
-        ##print formatname
-        #formatname=formatname[-5:]
-        ##print formatname
-        #expressao1=i+'_'+formatname+'_bin=if('+i+"=="+sts+","+`lista_multplos2[cont_reclasse]`+',0)'
-        ##print expressao1
-        #grass.mapcalc(expressao1, overwrite = True, quiet = True)
-        #expressao2=i+'_'+formatname+'_bin_int=int('+i+'_'+formatname+'_bin)'
-        #grass.mapcalc(expressao2, overwrite = True, quiet = True)
-        #grass.run_command('g.region',rast=i+'_'+formatname+'_bin_int')
-        #grass.run_command('r.neighbors',input=i+'_'+formatname+'_bin_int',out=i+'_'+formatname+'_bin_int_dila_50m',method='maximum',size=5,overwrite = True)
-        #cont_reclasse=cont_reclasse+1
-        #grass.run_command('g.remove',flags='f',rast=i+'_'+formatname+'_bin')
-        #lista_jucao_final.append(i+'_'+formatname+'_bin_int_dila_50m') 
+# calcula a  Área de cada classe "não-floresta"/Área total da paisagem.
+def indice_antropi(i):
+    # criando o nome do txt
+    nome=i.replace('extracByMask_rast_img','')
+    #-----------------------------------------
+    
+    # setando caminho de saida
+    os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
+    grass.run_command('g.region', rast=i)
+    #-----------------------------------------
+    # criando mapa retirando mapa retirando a floresta
+    expressao1='mapa_antrop=if('+i+'!=13 && '+i+ '!=14,'+i+',0)'
+    grass.mapcalc(expressao1, overwrite = True, quiet = True)
+    #-----------------------------------------
+    #pegando as classes do mapa de nao mata
+    stats=grass.read_command('r.stats',input="mapa_antrop",flags='a')
+    ListStats=stats.split('\n')
+    
+    del ListStats[-1]
+    del ListStats[-1]
+    #-----------------------------------------
+    # criando o acumulado de area
+    acumula=0
+    for i in ListStats:
         
-    #grass.run_command('r.series',input=lista_jucao_final,out='temp',overwrite = True,method='sum')
-    #expressao3=i+'_MapaHet_FINAL=int(if('+i+'>0,temp,null()))'
-    #grass.mapcalc(expressao3, overwrite = True, quiet = True)  
-    #grass.run_command('g.remove',flags='f',rast='temp')
-    #grass.run_command('r.colors',map=i+'_MapaHet_FINAL',color='random')
-    #grass.run_command('r.out.gdal',input=i+'_MapaHet_FINAL',out=i+'_MapaHet_FINAL.tif')
-    #for rm in lista_jucao_final:
-        #grass.run_command('g.remove',flags='f',rast=rm)  
+        split=i.split(' ')
+        split=float(split[1]) 
+        acumula=acumula+split    
+    
+    #-----------------------------------------
     
     
-    #lista_remove=grass.mlist_grouped ('rast', pattern='*bin_int*') ['PERMANENT']
-    #for a in lista_remove:
-        #grass.run_command('g.remove',flags='f',rast=a) 
+    # arbindo txt de AreaClass_div_areaTot 
+    txt=open(nome+'AreaClass_div_areaTot.txt','w')
+    txt.write('Class'',''Metrica\n')    
+
+    for i in ListStats:
+        #print i
+        split=i.split(' ')
+        ids=split[0]
+        if ids!='0':
+            
+            m2=float(split[1])
+            area_class=m2/acumula
+            area_class=round(area_class,3)
+            txt.write(ids+','+`area_class`+'\n')
+            
+    #-----------------------------------------
+    txt.close()
+
+
+# usando pra teste
+#indice_antropi("AI_pts_buffer_0250_extracByMask_rast_img")
+#-----------------------------------------
+
+
+
+
+
+# essa def cria o mapa de heterogeneidade
+# onde pega o mapa original etrai todas as suas classes
+# cria um novo codigo utilizando multiplos de 2
+# ex:
+# 11=1
+# 12=2
+# 13=4
+#-----------------------------------------
+def heterogeneidade(i):
+    grass.run_command('g.region',rast=i)
+    # extraindo apensa as classes do mapa
+    stats=grass.read_command('r.stats',input=i)
+    ListStats=stats.split('\n')
+    #-----------------------------------------
+    
+    
+    del ListStats[-1]
+    del ListStats[-1]
+    lista_multplos2=[]
+    #controlado de laco
+    y=0
+    #---------------------
+    
+    # criando multplos de 2
+    while len(ListStats)>=y:
+        if y==0:
+            resulti=1
+        else:
+            resulti=resulti*2
+        lista_multplos2.append(resulti)
+        y=y+1
+    #-----------------------------------------
+    
+    # controla as classes
+    cont_reclasse=0
+    lista_jucao_final=[]
+    #-----------------------------------------
+    
+    # esse laco separa cada classe em um mapa
+    #dissolv de acordo com aescala
+    # e junta tudo no final
+    for sts in ListStats:
+        #formatando nome de saida
+        formatname='000000'+`lista_multplos2[cont_reclasse]`
+        
+        formatname=formatname[-5:]
+        #---------------------------------------------------------------
+        
+        # criando um mapa para cada classe
+        expressao1=i+'_'+formatname+'_bin=if('+i+"=="+sts+","+`lista_multplos2[cont_reclasse]`+',0)'
+        
+        grass.mapcalc(expressao1, overwrite = True, quiet = True)
+        #--------------------------------------------------------
+        
+        # criando mapa inteiro 
+        expressao2=i+'_'+formatname+'_bin_int=int('+i+'_'+formatname+'_bin)'
+        grass.mapcalc(expressao2, overwrite = True, quiet = True)
+        #--------------------------------------------------
+        
+        # fazendo a dilatacao
+        grass.run_command('g.region',rast=i+'_'+formatname+'_bin_int')
+        grass.run_command('r.neighbors',input=i+'_'+formatname+'_bin_int',out=i+'_'+formatname+'_bin_int_dila_50m',method='maximum',size=5,overwrite = True)
+        #------------------------
+        cont_reclasse=cont_reclasse+1
+        
+        #removendo mapa de apoio
+        grass.run_command('g.remove',flags='f',rast=i+'_'+formatname+'_bin')
+        
+        #--------------------------------------------------
+        
+        #incrementando alista de mapas
+        lista_jucao_final.append(i+'_'+formatname+'_bin_int_dila_50m') 
+        #---------------------------------------------
+    
+    #somando mapas    
+    grass.run_command('r.series',input=lista_jucao_final,out='temp',overwrite = True,method='sum')
+    #-------------------------
+    
+    # criando map inteiro e clipando
+    expressao3=i+'_MapaHet_FINAL=int(if('+i+'>0,temp,null()))'
+    grass.mapcalc(expressao3, overwrite = True, quiet = True)  
+    #--------------------------------------------
+    
+    #removendo mapa de apoio 
+    grass.run_command('g.remove',flags='f',rast='temp')
+    
+    #atribuindo cor    
+    grass.run_command('r.colors',map=i+'_MapaHet_FINAL',color='random')
+    #------------------------------------------
+    
+    
+   # exportando mapa
+    grass.run_command('r.out.gdal',input=i+'_MapaHet_FINAL',out=i+'_MapaHet_FINAL.tif')
+    #------------------------------------------
+    
+    #removendo mapas
+    for rm in lista_jucao_final:
+        grass.run_command('g.remove',flags='f',rast=rm)  
+    
+    # removendo mapas
+    lista_remove=grass.mlist_grouped ('rast', pattern='*bin_int*') ['PERMANENT']
+    for a in lista_remove:
+        grass.run_command('g.remove',flags='f',rast=a) 
         
         
 
 
+#-----------------------------------------------------------------------------#
+# nessa def sera o txt com as infos dos mapas de borda
+# area em M2 e PCT
+#--------------------------------------------------
 def createtxtED(mapa):
     grass.run_command('g.region',rast=mapa)
     x=grass.read_command('r.stats',flags='a',input=mapa)
     y=x.split('\n')
     os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
-    #nome
-    txtreclass=open(mapa+'.txt','w')
+    nome=mapa.replace("extracByMask_rast_imgbin_eroED_50m_EDGE_FINAL",'')
+    
+    txtreclass=open(nome+'PCT_EDGE.txt','w')
     txtreclass.write('class'',''COD'',''A_M2'',''PCT\n')
     classe=['Matrix','EDGE','CORE']
     cont_class=0
@@ -95,10 +213,11 @@ def createtxtED(mapa):
                     pct=round(pct,2)                   
                     txtreclass.write(classe[cont_class]+','+`ids`+','+`m2`+','+`pct`+'\n')
                     cont_class=cont_class+1
+                # indice de matheron
                 if ids==1:
-                    txt_Matheron=open(mapa+'_Matheron.txt','w')
+                    txt_Matheron=open(nome+'_Matheron.txt','w')
                     txt_Matheron.write('Matheron\n')
-                    Matheron=pct/math.sqrt(m2)*math.sqrt(acumula)
+                    Matheron=pct/(math.sqrt(m2)*math.sqrt(acumula))
                     txt_Matheron.write(`Matheron`)
                     txt_Matheron.close()
                     
@@ -126,161 +245,233 @@ def create_EDGE_single(ListmapsED):
 
 
 
-create_EDGE_single('ARV_pts_buffer_0250_extracByMask_rast_imgbin')
+#create_EDGE_single('ARV_pts_buffer_0250_extracByMask_rast_imgbin')
 
-#def mean(mapa_mean):
-    #grass.run_command('g.region',rast=mapa_mean)
-    #mean=grass.read_command('r.univar',map=mapa_mean,fs='comma')
-    #mean_split=mean.split('\n')
-    ##print mean_split[9]
-    #mean_split_write=mean_split[9].replace('mean: ','')
-    #namesaidatxt=mapa_mean.replace("_extracByMask_rast_imgbin_patch_clump_mata_limpa_AreaHA",'_Mean_FLT.txt')
-    #os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
-    #txt=open(namesaidatxt,'w')
-    #cabecalho='Mean\n'
-    #txt.write(cabecalho)
-    #txt.write(mean_split_write)
-    #txt.close()
+def mean(mapa_mean):
+    grass.run_command('g.region',rast=mapa_mean)
+    mean=grass.read_command('r.univar',map=mapa_mean,fs='comma')
+    mean_split=mean.split('\n')
+    #print mean_split[9]
+    mean_split_write=mean_split[9].replace('mean: ','')
+    namesaidatxt=mapa_mean.replace("_extracByMask_rast_imgbin_patch_clump_mata_limpa_AreaHA",'_Mean_size_patch.txt')
+    os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
+    txt=open(namesaidatxt,'w')
+    cabecalho='Mean\n'
+    txt.write(cabecalho)
+    txt.write(mean_split_write)
+    txt.close()
     
   
 
 ##mean('ARV_pts_buffer_0250_extracByMask_rast_imgbin_patch_clump_mata_limpa_AreaHA')
-#def pct_flt(mapa_bin,mapa_limpo):
-   
-  
-  
-    ## pct
-    #grass.run_command('g.region',rast=mapa_bin)
-    #nome_saida_pct=mapa_bin.replace('extracByMask_rast_imgbin','DENSITY_PCT_FLT.txt')
-    #x=grass.read_command('r.stats',input=mapa_bin,fs='comma',flags='nap')
-    ##print x
-     
-    #y=x.split('\n')
-    #del y[-1]  
-    ##print y
-    #os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
-      
-    #txt=open(nome_saida_pct,'w')
-    #cabecalho='id'',''area_m2'',''pct'',''density\n'
-    #txt.write(cabecalho)
-    ##laco pra pegar a soma
-    #acumula=0
-    #for i in y:
-        #split=i.split('c')
-        #acumula=acumula+float(split[1])
-    ##print acumula
+
+# nesse blo existem duas metricas juntas.
+# onde é calculado a pct de floresta
+# e Área de floresta/área total da paisagem;
+#-------------------------------------------------
+def pct_flt(mapa_bin,mapa_limpo):
     
-    ##cont_n_frags
-    #grass.run_command('g.region',rast=mapa_limpo)
-    #nome_saida=mapa_limpo.replace('extracByMask_rast_imgbin_patch_clump_mata_limpa','reclass.txt')
-    #x=grass.read_command('r.stats',input=mapa_limpo,fs='comma',flags='l')
-    #nfrag_split=x.split('\n')
-    #del nfrag_split[-1];del nfrag_split[-1]
-    #nfrags=lenNfrags=len(nfrag_split)   
-    #densidade=nfrags/acumula
+    #definindo a regiao de trabalho
+    grass.run_command('g.region',rast=mapa_bin)
+    #--------------------------------------------
     
-    ##laco pra pegar p pct
+    #criando nome de saida para p txt 
+    nome_saida_pct=mapa_bin.replace('extracByMask_rast_imgbin','DENSITY_PCT_FLT.txt')
+    nome_saida_Are_p_Floresta=('extracByMask_rast_imgbin','AreaFLT_sob_TOT.txt')
+    #-------------------------------------------------------
     
-    #for i in y:
-        #split=i.split('c')
-        #id=split[0]
-        #m2=float(split[1])
-        #pct=round(float(split[1])/acumula*100,3)
+    # exatrindo as classes do raster
+    x=grass.read_command('r.stats',input=mapa_bin,fs='comma',flags='nap')
+    #------------------------------------------------
+    
+    # tratamento de string 
+    y=x.split('\n')
+    del y[-1]  
+    #----------------------------------------------------
+    
+    # mundanmdo diretorio de saida
+    os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
+    #---------------------------------------------------------
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    #abrindo o txt de saida
+    txt=open(nome_saida_pct,'w')
+    #---------------------------------
+    
+    # escrevendo o cabecalho do txt
+    cabecalho='id'',''area_m2'',''pct'',''density\n'
+    txt.write(cabecalho)
+    #----------------------------------
+    
+    # acumlando areas
+    acumula=0
+    for i in y:
+        split=i.split('c')
+        acumula=acumula+float(split[1])
+    
+    
+    #abrindo txt areaflt/areato 
+    txt_areafltPareatot=open(nome_saida_Are_p_Floresta,'w')
+    #gravando cabecalho
+    cabecalho2='id'',''AFLT_ATT\n'
+    #----------------------------------
+    
+    # calculando areaflt/areatot
+    for i in y:
+        split=i.split('c')
+        id=split[0]
+        m2=float(split[1])
+        areafltPareatot=m2/acumula   
         
-        #txt.write(id+','+`m2`+','+`pct`+','+`densidade`+'\n')
-    #txt.close() 
+        # gravando txt
+        txt.write(id+','+`m2`+','+`areafltPareatot`+'\n')
+        #----------------------------------
+          
+    
+    txt_areafltPareatot.close();
+    #----------------------------------
+    
+    #redefinindo regiao
+    grass.run_command('g.region',rast=mapa_limpo)
+    #----------------------------------
+    
+    # nomde de saida do mapa
+    nome_saida=mapa_limpo.replace('extracByMask_rast_imgbin_patch_clump_mata_limpa','reclass.txt')
+    #----------------------------------
+    
+    #extraidno os fragementos dos mapas para contar quantos tem por paisagem
+    x=grass.read_command('r.stats',input=mapa_limpo,fs='comma',flags='l')
+    #----------------------------------
+    
+    #criando um lista 
+    nfrag_split=x.split('\n')
+    #----------------------------------
+    
+    #removendo os dois ultimos item que sao vazis
+    del nfrag_split[-1];del nfrag_split[-1]
+    #----------------------------------
+    
+    #pegando  quantos frags tem na lista
+    nfrags=lenNfrags=len(nfrag_split) 
+    #----------------------------------
+    
+    #calculando a desidade
+    densidade=nfrags/acumula
+    #----------------------------------
+    
+    
+    # calculando a pct 
+    for i in y:
+        split=i.split('c')
+        id=split[0]
+        m2=float(split[1])
+        pct=round(float(split[1])/acumula*100,3)
+        
+        # gravando txt
+        txt.write(id+','+`m2`+','+`pct`+','+`densidade`+'\n')
+        #----------------------------------
+    txt.close() 
 
-##pct_flt('ARV_pts_buffer_0250_extracByMask_rast_imgbin','ARV_pts_buffer_0250_extracByMask_rast_imgbin_patch_clump_mata_limpa')
+#pct_flt('ARV_pts_buffer_0250_extracByMask_rast_imgbin','ARV_pts_buffer_0250_extracByMask_rast_imgbin_patch_clump_mata_limpa')
 
 
 
 
-#def rulesreclass(mapa_limpo):
+def rulesreclass(mapa_limpo):
 
-    #grass.run_command('g.region',rast=mapa_limpo)
-    #nome_saida=mapa_limpo.replace('extracByMask_rast_imgbin_patch_clump_mata_limpa','reclass.txt')
-    #x=grass.read_command('r.stats',input=mapa_limpo,fs='comma',flags='na')
-    ##print x
+    grass.run_command('g.region',rast=mapa_limpo)
+    nome_saida=mapa_limpo.replace('extracByMask_rast_imgbin_patch_clump_mata_limpa','reclass.txt')
+    x=grass.read_command('r.stats',input=mapa_limpo,fs='comma',flags='na')
+    #print x
      
-    #y=x.split('\n')
-    #del y[-1]
-    #os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
+    y=x.split('\n')
+    del y[-1]
+    os.chdir(r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados")
     
-    #txt=open(nome_saida,'w')
+    txt=open(nome_saida,'w')
     
     
-    #for i in y:
-        #split=i.split('c')
+    for i in y:
+        split=i.split('c')
          
-        #id=split[0]
-        #m2=float(split[1])
-        #ha=(m2/10000)+1
-        #txt.write(id+'='+`ha`+'\n')
+        id=split[0]
+        m2=float(split[1])
+        ha=(m2/10000)+1
+        txt.write(id+'='+`ha`+'\n')
       
-    #txt.close()
-    #return nome_saida
+    txt.close()
+    return nome_saida
     
     
   
     
     
     
-  ##rulesreclass('ARV_pts_buffer_0250_extracByMask_rast_imgbin_patch_clump_mata_limpa')
+  #rulesreclass('ARV_pts_buffer_0250_extracByMask_rast_imgbin_patch_clump_mata_limpa')
   
-#def pacthSingle(Listmapspath):
-    #y=0
+def pacthSingle(Listmapspath):
+    y=0
     
-    #grass.run_command('g.region',rast=Listmapspath)
-    #expression1="MapaBinario="+Listmapspath
-    #grass.mapcalc(expression1, overwrite = True, quiet = True)    
+    grass.run_command('g.region',rast=Listmapspath)
+    expression1="MapaBinario="+Listmapspath
+    grass.mapcalc(expression1, overwrite = True, quiet = True)    
    
-    #expression2="A=MapaBinario"
-    #grass.mapcalc(expression2, overwrite = True, quiet = True)
+    expression2="A=MapaBinario"
+    grass.mapcalc(expression2, overwrite = True, quiet = True)
     
-    ##r.colors map=A color=wave
-    #expression3="MapaBinario_A=if(A[0,0]==0 && A[0,-1]==1 && A[1,-1]==0 && A[1,0]==1,1,A)"
-    #grass.mapcalc(expression3, overwrite = True, quiet = True)
-    #expression4="A=MapaBinario_A"
-    #grass.mapcalc(expression4, overwrite = True, quiet = True)
-    #expression5="MapaBinario_AB=if(A[0,0]==0 && A[-1,0]==1 && A[-1,1]==0 && A[0,1]==1,1,A)"
-    #grass.mapcalc(expression5, overwrite = True, quiet = True) 
-    #expression6="A=MapaBinario_AB"
-    #grass.mapcalc(expression6, overwrite = True, quiet = True)
-    #expression7="MapaBinario_ABC=if(A[0,0]==0 && A[0,1]==1 && A[1,1]==0 && A[1,0]==1,1,A)"
-    #grass.mapcalc(expression7, overwrite = True, quiet = True)
-    #expression8="A=MapaBinario_ABC"
-    #grass.mapcalc(expression8, overwrite = True, quiet = True)
-    #expression9="MapaBinario_ABCD=if(A[0,0]==0 && A[1,0]==1 && A[1,1]==0 && A[0,1]==1,1,A)"
-    #grass.mapcalc(expression9, overwrite = True, quiet = True)
-    #expression10="A=MapaBinario_ABCD"
-    #grass.mapcalc(expression10, overwrite = True, quiet = True)
-    #expression11=Listmapspath+"_patch=A"
-    #grass.mapcalc(expression11, overwrite = True, quiet = True)
-    ##r.colors map=$i"_patch" color=random
-    #grass.run_command('r.clump',input=Listmapspath+"_patch",output=Listmapspath+"_patch_clump",overwrite = True)
-    #expression12=Listmapspath+"_patch_clump_mata="+Listmapspath+"_patch_clump*"+Listmapspath
-    #grass.mapcalc(expression12, overwrite = True, quiet = True)
-    #expression13=Listmapspath+"_patch_clump_mata_limpa=if("+Listmapspath+"_patch_clump_mata>0,"+Listmapspath+"_patch_clump_mata,null())"
-    #grass.mapcalc(expression13, overwrite = True, quiet = True)
-    #txt_reclass=rulesreclass(Listmapspath+"_patch_clump_mata_limpa")
-    #grass.run_command('r.reclass',input=Listmapspath+"_patch_clump_mata_limpa",output=Listmapspath+"_patch_clump_mata_limpa_AreaHA",rules=txt_reclass,overwrite = True)
-    #mean(Listmapspath+"_patch_clump_mata_limpa_AreaHA")
-    #pct_flt(Listmapspath,Listmapspath+"_patch_clump_mata_limpa")
-    #grass.run_command('g.remove',flags='f',rast='A,MapaBinario,MapaBinario_A,MapaBinario_AB,MapaBinario_ABC,MapaBinario_ABCD')  
-    #os.remove(txt_reclass)
+    #r.colors map=A color=wave
+    expression3="MapaBinario_A=if(A[0,0]==0 && A[0,-1]==1 && A[1,-1]==0 && A[1,0]==1,1,A)"
+    grass.mapcalc(expression3, overwrite = True, quiet = True)
+    expression4="A=MapaBinario_A"
+    grass.mapcalc(expression4, overwrite = True, quiet = True)
+    expression5="MapaBinario_AB=if(A[0,0]==0 && A[-1,0]==1 && A[-1,1]==0 && A[0,1]==1,1,A)"
+    grass.mapcalc(expression5, overwrite = True, quiet = True) 
+    expression6="A=MapaBinario_AB"
+    grass.mapcalc(expression6, overwrite = True, quiet = True)
+    expression7="MapaBinario_ABC=if(A[0,0]==0 && A[0,1]==1 && A[1,1]==0 && A[1,0]==1,1,A)"
+    grass.mapcalc(expression7, overwrite = True, quiet = True)
+    expression8="A=MapaBinario_ABC"
+    grass.mapcalc(expression8, overwrite = True, quiet = True)
+    expression9="MapaBinario_ABCD=if(A[0,0]==0 && A[1,0]==1 && A[1,1]==0 && A[0,1]==1,1,A)"
+    grass.mapcalc(expression9, overwrite = True, quiet = True)
+    expression10="A=MapaBinario_ABCD"
+    grass.mapcalc(expression10, overwrite = True, quiet = True)
+    expression11=Listmapspath+"_patch=A"
+    grass.mapcalc(expression11, overwrite = True, quiet = True)
+    #r.colors map=$i"_patch" color=random
+    grass.run_command('r.clump',input=Listmapspath+"_patch",output=Listmapspath+"_patch_clump",overwrite = True)
+    expression12=Listmapspath+"_patch_clump_mata="+Listmapspath+"_patch_clump*"+Listmapspath
+    grass.mapcalc(expression12, overwrite = True, quiet = True)
+    expression13=Listmapspath+"_patch_clump_mata_limpa=if("+Listmapspath+"_patch_clump_mata>0,"+Listmapspath+"_patch_clump_mata,null())"
+    grass.mapcalc(expression13, overwrite = True, quiet = True)
+    txt_reclass=rulesreclass(Listmapspath+"_patch_clump_mata_limpa")
+    grass.run_command('r.reclass',input=Listmapspath+"_patch_clump_mata_limpa",output=Listmapspath+"_patch_clump_mata_limpa_AreaHA",rules=txt_reclass,overwrite = True)
+    mean(Listmapspath+"_patch_clump_mata_limpa_AreaHA")
+    pct_flt(Listmapspath,Listmapspath+"_patch_clump_mata_limpa")
+    grass.run_command('g.remove',flags='f',rast='A,MapaBinario,MapaBinario_A,MapaBinario_AB,MapaBinario_ABC,MapaBinario_ABCD')  
+    os.remove(txt_reclass)
 
 
-#lista_rasts=grass.mlist_grouped ('rast', pattern='*0250*') ['PERMANENT']
-#temp=lista_rasts[0:2]
-#for i in temp:
-    #out_bin=i+'bin'
-    #expressao_mata=out_bin+'=if('+i+'==14 |'+i+'==13,'+i+',0)'
-    #grass.run_command('g.region',rast=i)
-    #grass.mapcalc(expressao_mata, overwrite = True, quiet = True)
-    ##print expressao_mata
-    #create_EDGE_single(out_bin)
-    #pacthSingle(out_bin)
-    #heterogeneidade(i)
-    #indice_de_Matheron(mapa_pid, pct)
+lista_rasts=grass.mlist_grouped ('rast', pattern='*0250*') ['PERMANENT']
+temp=lista_rasts[0:2]
+for i in temp:
+    out_bin=i+'bin'
+    expressao_mata=out_bin+'=if('+i+'==14 |'+i+'==13,'+i+',0)'
+    grass.run_command('g.region',rast=i)
+    grass.mapcalc(expressao_mata, overwrite = True, quiet = True)
+    #print expressao_mata
+    create_EDGE_single(out_bin)
+    pacthSingle(out_bin)
+    heterogeneidade(i)
+    indice_antropi(i)
     
   ##print frags

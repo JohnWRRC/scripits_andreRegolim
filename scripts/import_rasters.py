@@ -10,15 +10,15 @@ LISTA=[]
 LISTA2=[]  
 
 
-for file in os.listdir(r'F:\data\Andre_regolin\Shapes_AndreRegolin\Mapas_finalizados_2015_03_d14\Mapas_finaliazdos_join_rasters_extract'):
+for file in os.listdir(r'E:\data_2015\Andre_regolin\Shapes_AndreRegolin\Mapas_finalizados_2015_03_d14\Mapas_finaliazdos_join_rasters_extract'):
     if fnmatch.fnmatch(file, '*.img'):
         lista_arquivos.append(file)
   
 
              
-os.chdir(r'F:\data\Andre_regolin\Shapes_AndreRegolin\Mapas_finalizados_2015_03_d14\Mapas_finaliazdos_join_rasters_extract')
+os.chdir(r'E:\data_2015\Andre_regolin\Shapes_AndreRegolin\Mapas_finalizados_2015_03_d14\Mapas_finaliazdos_join_rasters_extract')
 for i in lista_arquivos:
-    if "CA" in i:
+    if "PI_pts" in i:
         print i
         out=i.replace('.img','_img')
         grass.run_command('r.in.gdal',input=i,out=out,overwrite=True)

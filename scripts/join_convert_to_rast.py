@@ -23,7 +23,27 @@ for i in fc:
     inp=i.replace('.shp','')
     out=inp+'_rast.img'
     arcpy.PolygonToRaster_conversion(inp,"COD",out,"CELL_CENTER","NONE",5)
-    
+
+
+
+#-----------------------------------------------------------------------------------------------------------------------------------------
+# consertando PL
+arcpy.env.extent = "734883.014988 7101052.500931 741216.421047 7110192.000000"
+env.workspace = "F:\data\Andre_regolin\Shapes_AndreRegolin\Mapas_finalizados_2015_03_d14\Mapas_finaliazdos_join_rasters"
+arcpy.PolygonToRaster_conversion("PI_pts_buf2k_v0","COD",'PI_pts_buf2k_v0_rast.img',"CELL_CENTER","NONE",5)
+
+
+
+
+
+
+
+
+
+
+
+
+  
 #create buffer 250,500,1000,1500  
 env.workspace = "F:\data\Andre_regolin\Shapes_AndreRegolin\Todos_os_pontos"
 fc=arcpy.ListFeatureClasses()
@@ -110,9 +130,6 @@ for i in fc:
         
 
 
-
-
-F:\data\Andre_regolin\Shapes_AndreRegolin\Mapas_finalizados_2015_03_d14\Mapas_finaliazdos_join_rasters_extract\temp
         
         
     

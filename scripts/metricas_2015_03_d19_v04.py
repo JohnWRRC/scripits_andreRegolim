@@ -222,9 +222,15 @@ def createtxtED(mapa):
                     cont_class=cont_class+1
                 # indice de matheron
                 if ids==1:
+                    pct_edge=m2/acumula*100
+                    pct_edge=round(pct_edge,2)
+                if ids==2:
+                    pctflt=m2/acumula*100
+                    pctflt=round(pctflt,2)
                     txt_Matheron=open(nome+'_Matheron.txt','w')
                     txt_Matheron.write('Matheron\n')
-                    Matheron=pct/(math.sqrt(m2)*math.sqrt(acumula))
+                    #pct de edge por pct de flt
+                    Matheron=pct_edge/pctflt
                     txt_Matheron.write(`Matheron`)
                     txt_Matheron.close()
                     
@@ -232,11 +238,11 @@ def createtxtED(mapa):
         txtreclass.close()
   
 
-
+#complemento da def
 def mapcalcED(expresao):
     grass.mapcalc(expresao, overwrite = True, quiet = True)  
-
-  
+#-----------------------------------
+#essa def cria o mapa de bordas  
 def create_EDGE_single(ListmapsED):
     grass.run_command('g.region',rast=ListmapsED)
     expressao2='mapa_bin=if('+ListmapsED+'>0,1,0)'
@@ -260,6 +266,8 @@ def create_EDGE_single(ListmapsED):
 
 
 #---------------------------------------------------------------------------------------------------------------------------------
+
+#essa def cria o txt com o tamanho media dos fragmentos por paisagem
 def mean(mapa_mean):
     grass.run_command('g.region',rast=mapa_mean)
     mean=grass.read_command('r.univar',map=mapa_mean,fs='comma')
@@ -286,7 +294,7 @@ def mean(mapa_mean):
 
 
 #---------------------------------------------------------------------------------------------------------------------------------
-# nesse blo existem duas metricas juntas.
+# nesse bloco existem duas metricas juntas.
 # onde e calculado a pct de floresta
 # e area de floresta/area total da paisagem;
 #-------------------------------------------------
@@ -346,7 +354,7 @@ def pct_flt(mapa_bin,mapa_limpo):
         if id!='0':
             m2=float(split[1])
             areafltPareatot=m2/acumula   
-            print areafltPareatot
+            areafltPareatot=round( areafltPareatot,3)
             # gravando txt
             txt_areafltPareatot.write(id+','+`m2`+','+`areafltPareatot`+'\n')
         #----------------------------------
@@ -381,6 +389,7 @@ def pct_flt(mapa_bin,mapa_limpo):
     
     #calculando a desidade
     densidade=nfrags/acumula
+    
     #----------------------------------
     
     
@@ -405,6 +414,8 @@ def pct_flt(mapa_bin,mapa_limpo):
 
 
 #---------------------------------------------------------------------------------------------------------------------------------
+
+#essa def cria o txt de reclassificao para gerar o mapa de area
 def rulesreclass(mapa_limpo):
 
     grass.run_command('g.region',rast=mapa_limpo)
@@ -429,7 +440,7 @@ def rulesreclass(mapa_limpo):
       
     txt.close()
     return nome_saida
-    
+  #------------------------------------------------------------------ 
     
   
     
@@ -445,6 +456,9 @@ def rulesreclass(mapa_limpo):
 
 
 #---------------------------------------------------------------------------------------------------------------------------------
+
+# essa defe calcula area para cada fragmento
+# cria mapa de ids
 def pacthSingle(Listmapspath):
     y=0
     
@@ -494,7 +508,7 @@ def pacthSingle(Listmapspath):
 
 #---------------------------------------------------------------------------------------------------------------------------------
 lista_rasts=grass.mlist_grouped ('rast', pattern='*0250*') ['PERMANENT']
-temp=lista_rasts[0:2]
+temp=lista_rasts[0:4]
 for i in temp:
     out_bin=i+'bin'
     expressao_mata=out_bin+'=if('+i+'==14 |'+i+'==13,'+i+',0)'
