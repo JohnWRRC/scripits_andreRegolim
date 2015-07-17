@@ -517,7 +517,7 @@ def pacthSingle(Listmapspath):
 
 
 #---------------------------------------------------------------------------------------------------------------------------------
-lista_rasts=grass.mlist_grouped ('rast', pattern='*0250*') ['PERMANENT']
+lista_rasts=grass.mlist_grouped ('rast', pattern='*PEA*') ['PERMANENT']
 
 for i in lista_rasts:
     out_bin=i+'bin'

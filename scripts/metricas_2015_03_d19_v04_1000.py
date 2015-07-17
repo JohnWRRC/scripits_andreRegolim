@@ -3,7 +3,7 @@ import os
 import math
 
 #tem que definir o diretotio de saida
-outputfolder=r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados"
+outputfolder=r"E:\data_2015\Andre_regolin\Shapes_AndreRegolin\___Resultados\1000"
 
 #------------------------------------------------------------------------------------------------------------------------------
 # calcula a  area de cada classe "nao-floresta"/area total da paisagem.
@@ -517,7 +517,7 @@ def pacthSingle(Listmapspath):
 
 
 #---------------------------------------------------------------------------------------------------------------------------------
-lista_rasts=grass.mlist_grouped ('rast', pattern='*0250*') ['PERMANENT']
+lista_rasts=grass.mlist_grouped ('rast', pattern='*1000*') ['PERMANENT']
 
 for i in lista_rasts:
     out_bin=i+'bin'
